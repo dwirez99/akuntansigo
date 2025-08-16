@@ -1,5 +1,6 @@
-Bagus! Berikut adalah rancangan awal aplikasi manajemen keuangan untuk instansi yang mencakup fitur yang kamu butuhkan:
-
+**AKUNTANSIGO**
+---
+*Aplikasi Perhitungan pemasukan dan Pengeluaran dana sederhana*
 ---
 
 ### 🧩 **Fitur Utama Aplikasi**
