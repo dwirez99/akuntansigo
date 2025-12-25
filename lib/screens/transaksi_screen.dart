@@ -458,8 +458,8 @@ class _TransaksiScreenState extends ConsumerState<TransaksiScreen> {
   }
 
   String _formatCurrency(int amount) {
-    final formatter = NumberFormat('#,###');
-    return 'Rp ${formatter.format(amount)}';
+    final formatter = NumberFormat('#,##0.00', 'id_ID');
+    return 'Rp.${formatter.format(amount)}';
   }
 
   void _addTransaksi(BuildContext context) {
