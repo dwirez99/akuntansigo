@@ -6,6 +6,7 @@ import '../models/kategori.dart';
 import '../providers/transaksi_provider.dart';
 import '../providers/kategori_provider.dart';
 import 'transaksi_form_screen.dart';
+import '../widgets/export_dialog.dart';
 
 class TransaksiScreen extends ConsumerStatefulWidget {
   const TransaksiScreen({super.key});
@@ -81,6 +82,12 @@ class _TransaksiScreenState extends ConsumerState<TransaksiScreen> {
         title: const Text('Kelola Transaksi'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
+          // Export Button
+          IconButton(
+            icon: const Icon(Icons.download),
+            tooltip: 'Export Data',
+            onPressed: () => _showExportDialog(context),
+          ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.sort),
             tooltip: 'Urutkan',
@@ -506,6 +513,20 @@ class _TransaksiScreenState extends ConsumerState<TransaksiScreen> {
                 child: const Text('Hapus'),
               ),
             ],
+          ),
+    );
+  }
+
+  void _showExportDialog(BuildContext context) {
+    final transaksiList = ref.read(transaksiProvider);
+    final kategoriList = ref.read(kategoriProvider);
+
+    showDialog(
+      context: context,
+      builder:
+          (context) => ExportDialog(
+            transaksiList: transaksiList,
+            kategoriList: kategoriList,
           ),
     );
   }
