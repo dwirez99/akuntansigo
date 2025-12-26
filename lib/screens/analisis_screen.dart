@@ -3,9 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter/foundation.dart';
 import '../providers/analisis_provider.dart';
+import '../providers/transaksi_provider.dart';
+import '../providers/kategori_provider.dart';
 import '../widgets/kategori_pie_chart.dart';
 import '../widgets/bulanan_line_chart.dart';
 import '../widgets/summary_card.dart';
+import '../widgets/export_dialog.dart';
 import '../services/pdf_service.dart';
 import '../core/db/database_helper.dart';
 
@@ -232,14 +235,10 @@ class AnalisisScreen extends ConsumerWidget {
           ),
         ),
       ),
-      floatingActionButton: analisisAsync.when(
-        data: (data) => FloatingActionButton.extended(
-          onPressed: () => _downloadPDF(context, data),
-          label: const Text('Download PDF'),
-          icon: const Icon(Icons.download),
-        ),
-        loading: () => null,
-        error: (_, __) => null,
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _showExportDialog(context, ref),
+        label: const Text('Export'),
+        icon: const Icon(Icons.file_download),
       ),
     );
   }
@@ -328,7 +327,7 @@ class AnalisisScreen extends ConsumerWidget {
                   final selisih = bulanan.pemasukan - bulanan.pengeluaran;
                   final date = DateTime.parse('${bulanan.bulan}-01');
                   final monthName = DateFormat('MMM yyyy').format(date);
-                  
+
                   return TableRow(
                     children: [
                       Padding(
@@ -436,6 +435,19 @@ class AnalisisScreen extends ConsumerWidget {
         );
       }
     }
+  }
+
+  void _showExportDialog(BuildContext context, WidgetRef ref) {
+    final transaksiList = ref.read(transaksiProvider);
+    final kategoriList = ref.read(kategoriProvider);
+
+    showDialog(
+      context: context,
+      builder: (context) => ExportDialog(
+        transaksiList: transaksiList,
+        kategoriList: kategoriList,
+      ),
+    );
   }
 
   Future<void> _generateDummy(BuildContext context, WidgetRef ref) async {

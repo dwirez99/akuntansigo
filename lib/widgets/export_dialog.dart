@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../models/transaksi.dart';
 import '../models/kategori.dart';
-import '../core/export/excel_exporter.dart';
-import '../core/export/export_helper.dart';
+import '../models/analisis_data.dart';
+import '../services/excel_exporter.dart';
+import '../services/export_helper.dart';
+import '../services/pdf_service.dart';
 
 class ExportDialog extends ConsumerStatefulWidget {
   final List<Transaksi> transaksiList;
@@ -523,12 +525,17 @@ class _ExportDialogState extends ConsumerState<ExportDialog> {
           );
         }
       } else if (_exportFormat == 'pdf') {
-        // PDF export - to be implemented
+        // PDF export using PDFService
+        final analisisData = _convertToAnalisisData(filteredData);
+
+        await PDFService.generateAnalisisReport(analisisData);
+
         if (mounted) {
+          Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('PDF export akan segera hadir!'),
-              backgroundColor: Colors.orange,
+              content: Text('Laporan PDF berhasil dibuat'),
+              backgroundColor: Colors.green,
             ),
           );
         }
@@ -671,6 +678,110 @@ class _ExportDialogState extends ConsumerState<ExportDialog> {
                 ),
             ],
           ),
+    );
+  }
+
+  AnalisisData _convertToAnalisisData(List<Transaksi> transaksiList) {
+    // Calculate totals
+    int totalPemasukan = 0;
+    int totalPengeluaran = 0;
+
+    // Group by kategori
+    Map<String, int> pemasukanByKategori = {};
+    Map<String, int> pengeluaranByKategori = {};
+    Map<String, Map<String, int>> monthlyPemasukan = {};
+    Map<String, Map<String, int>> monthlyPengeluaran = {};
+
+    for (var transaksi in transaksiList) {
+      final kategori = widget.kategoriList.firstWhere(
+        (k) => k.id == transaksi.kategoriId,
+        orElse: () => Kategori(id: 0, namaKategori: 'Lainnya', deskripsi: ''),
+      );
+      final namaKategori = kategori.namaKategori;
+      final month = transaksi.tanggal.substring(0, 7); // YYYY-MM
+
+      if (transaksi.jenis == 'Pemasukan') {
+        totalPemasukan += transaksi.nominal;
+        pemasukanByKategori[namaKategori] =
+            (pemasukanByKategori[namaKategori] ?? 0) + transaksi.nominal;
+
+        monthlyPemasukan[month] = monthlyPemasukan[month] ?? {};
+        monthlyPemasukan[month]![namaKategori] =
+            (monthlyPemasukan[month]![namaKategori] ?? 0) + transaksi.nominal;
+      } else {
+        totalPengeluaran += transaksi.nominal;
+        pengeluaranByKategori[namaKategori] =
+            (pengeluaranByKategori[namaKategori] ?? 0) + transaksi.nominal;
+
+        monthlyPengeluaran[month] = monthlyPengeluaran[month] ?? {};
+        monthlyPengeluaran[month]![namaKategori] =
+            (monthlyPengeluaran[month]![namaKategori] ?? 0) + transaksi.nominal;
+      }
+    }
+
+    // Convert to KategoriAnalisis
+    final kategoriPemasukan =
+        pemasukanByKategori.entries.map((e) {
+            return KategoriAnalisis(
+              namaKategori: e.key,
+              total: e.value,
+              persentase:
+                  totalPemasukan > 0 ? (e.value / totalPemasukan * 100) : 0,
+            );
+          }).toList()
+          ..sort((a, b) => b.total.compareTo(a.total));
+
+    final kategoriPengeluaran =
+        pengeluaranByKategori.entries.map((e) {
+            return KategoriAnalisis(
+              namaKategori: e.key,
+              total: e.value,
+              persentase:
+                  totalPengeluaran > 0 ? (e.value / totalPengeluaran * 100) : 0,
+            );
+          }).toList()
+          ..sort((a, b) => b.total.compareTo(a.total));
+
+    // Create monthly data
+    final allMonths =
+        {...monthlyPemasukan.keys, ...monthlyPengeluaran.keys}.toList()..sort();
+    final dataBulanan =
+        allMonths.map((month) {
+          final pemasukan = (monthlyPemasukan[month]?.values ?? []).fold<int>(
+            0,
+            (a, b) => a + b,
+          );
+          final pengeluaran = (monthlyPengeluaran[month]?.values ?? [])
+              .fold<int>(0, (a, b) => a + b);
+
+          return BulananData(
+            bulan: month,
+            pemasukan: pemasukan,
+            pengeluaran: pengeluaran,
+          );
+        }).toList();
+
+    // Find insights
+    final sumberUtama =
+        kategoriPemasukan.isNotEmpty
+            ? kategoriPemasukan.first.namaKategori
+            : null;
+    final posTerbesar =
+        kategoriPengeluaran.isNotEmpty
+            ? kategoriPengeluaran.first.namaKategori
+            : null;
+
+    return AnalisisData(
+      totalPemasukan: totalPemasukan,
+      totalPengeluaran: totalPengeluaran,
+      selisih: totalPemasukan - totalPengeluaran,
+      kategoriPemasukan: kategoriPemasukan,
+      kategoriPengeluaran: kategoriPengeluaran,
+      dataBulanan: dataBulanan,
+      startDate: _dateRange == 'all' ? null : _startDate,
+      endDate: _dateRange == 'all' ? null : _endDate,
+      sumberUtama: sumberUtama,
+      posTerbesar: posTerbesar,
     );
   }
 }
