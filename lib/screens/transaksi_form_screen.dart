@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../models/transaksi.dart';
-import '../models/kategori.dart';
 import '../providers/transaksi_provider.dart';
 import '../providers/kategori_provider.dart';
 
