@@ -24,7 +24,7 @@ class _KategoriFormScreenState extends ConsumerState<KategoriFormScreen> {
     // Jika editing, isi form dengan data yang ada
     if (widget.kategori != null) {
       _namaController.text = widget.kategori!.namaKategori;
-      _deskripsiController.text = widget.kategori!.deskripsi;
+      _deskripsiController.text = widget.kategori!.deskripsi ?? '';
     }
   }
 
@@ -78,7 +78,7 @@ class _KategoriFormScreenState extends ConsumerState<KategoriFormScreen> {
                       TextFormField(
                         controller: _deskripsiController,
                         decoration: const InputDecoration(
-                          labelText: 'Deskripsi',
+                          labelText: 'Deskripsi (Opsional)',
                           hintText: 'Masukkan deskripsi kategori',
                           border: OutlineInputBorder(),
                           prefixIcon: Icon(Icons.description),
@@ -86,7 +86,7 @@ class _KategoriFormScreenState extends ConsumerState<KategoriFormScreen> {
                         maxLines: 3,
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
-                            return 'Deskripsi tidak boleh kosong';
+                            _deskripsiController.text = 'Tidak ada Deskripsi';
                           }
                           return null;
                         },
@@ -103,22 +103,25 @@ class _KategoriFormScreenState extends ConsumerState<KategoriFormScreen> {
                   backgroundColor: Theme.of(context).primaryColor,
                   foregroundColor: Colors.white,
                 ),
-                child: _isLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                child:
+                    _isLoading
+                        ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
+                          ),
+                        )
+                        : Text(
+                          isEditing ? 'Update Kategori' : 'Simpan Kategori',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      )
-                    : Text(
-                        isEditing ? 'Update Kategori' : 'Simpan Kategori',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
               ),
             ],
           ),
@@ -165,10 +168,7 @@ class _KategoriFormScreenState extends ConsumerState<KategoriFormScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
         );
       }
     } finally {
